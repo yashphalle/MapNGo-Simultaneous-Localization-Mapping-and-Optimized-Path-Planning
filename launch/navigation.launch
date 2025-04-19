@@ -1,0 +1,21 @@
+<launch>
+  <!-- Gazebo Sim time-->
+  <param name="use_sim_time" value="true"/>
+  
+  <!--path planner node -->
+  <node pkg="turtlebot_slam_navigation" type="path_planner_node" name="path_planner" output="screen">
+    <param name="inflation_radius" value="0.3"/>
+    <param name="obstacle_threshold" value="50"/>
+  </node>
+  
+  <!--path follower node -->
+  <node pkg="turtlebot_slam_navigation" type="path_follower_node" name="path_follower" output="screen">
+    <param name="look_ahead_distance" value="0.5"/>
+    <param name="linear_velocity" value="0.2"/>
+    <param name="angular_velocity_gain" value="1.0"/>
+    <param name="goal_tolerance" value="0.1"/>
+  </node>
+  
+  <!-- Launch RViz for visualization -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find turtlebot_slam_navigation)/config/navigation.rviz"/>
+</launch>

@@ -1,0 +1,28 @@
+<launch>
+  <!-- TurtleBot3 model type -->
+  <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
+  
+  <!-- Gazebo world file to load -->
+  
+  <arg name="world_name" default="$(find turtlebot3_gazebo)/worlds/turtlebot3_stage_4.world"/>
+  
+  <!-- Launch Gazebo w -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_name)"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+  <!-- Load the TurtleBot URDF into the parameter server -->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+  
+  <!-- Spawn the TurtleBot in Gazebo -->
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" 
+        args="-urdf -model turtlebot3 -x 0.0 -y 0.0 -z 0.0 -param robot_description" />
+  
+  <!-- Launch robot state publisher for tf -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen"/>
+</launch>
