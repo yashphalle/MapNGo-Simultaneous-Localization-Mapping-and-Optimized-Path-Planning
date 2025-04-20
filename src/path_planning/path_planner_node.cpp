@@ -4,13 +4,16 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <tf/transform_listener.h>
 
-// Forward declare the classes and functions we'll use
+
+#include "utils.h"
 
 namespace path_planning {
     class AStarPlanner;
+    class DijkstraPlanner;
 }
 
 
+#include "dijkstra_planner.cpp"
 #include "a_star_planner.cpp"
 
 using namespace path_planning;
@@ -26,10 +29,26 @@ private:
     nav_msgs::OccupancyGrid map_;
     bool map_received_;
     
-    AStarPlanner planner_;
+    AStarPlanner* a_star_planner_;
+    DijkstraPlanner* dijkstra_planner_;
+
+    std::string algorithm_;
 
 public:
-    PathPlannerNode() : nh_("~"), map_received_(false), planner_(nh_) {
+    PathPlannerNode() : nh_("~"), map_received_(false) {
+
+        a_star_planner_ = nullptr;
+        dijkstra_planner_ = nullptr;
+
+        nh_.param<std::string>("algorithm", algorithm_, "astar");
+        if (algorithm_ == "astar") {
+            a_star_planner_ = new AStarPlanner(nh_);
+            // planner_ = a_star_planner_;
+        } else if (algorithm_ == "dijkstra") {
+            dijkstra_planner_ = new DijkstraPlanner(nh_);
+            // planner_ = dijkstra_planner_;
+        }
+
         // Subscribe to map updates
         map_sub_ = nh_.subscribe("/map", 1, &PathPlannerNode::mapCallback, this);
         
@@ -40,6 +59,11 @@ public:
         path_pub_ = nh_.advertise<nav_msgs::Path>("/path", 1);
         
         ROS_INFO("Path planner node initialized");
+    }
+
+    ~PathPlannerNode() {
+        if(a_star_planner_)delete a_star_planner_;
+        if(dijkstra_planner_)delete dijkstra_planner_;
     }
     
     void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& map) {
@@ -76,7 +100,15 @@ public:
                  start.pose.position.x, start.pose.position.y,
                  goal->pose.position.x, goal->pose.position.y);
         
-        nav_msgs::Path path = planner_.planPath(start, *goal, map_);
+        
+        nav_msgs::Path path ;
+        if (algorithm_ == "astar") {
+            path = a_star_planner_->planPath(start, *goal, map_);
+        } else { 
+            path = dijkstra_planner_->planPath(start, *goal, map_);
+        }
+
+        
         
         // Publish the path
         if (!path.poses.empty()) {

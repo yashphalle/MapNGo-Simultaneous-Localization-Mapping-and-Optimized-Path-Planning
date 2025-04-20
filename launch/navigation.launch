@@ -1,14 +1,18 @@
 <launch>
-  <!-- Gazebo Sim time-->
+  
   <param name="use_sim_time" value="true"/>
   
-  <!--path planner node -->
+  <!-- Algorithm parameter: 'astar' or 'dijkstra' -->
+  <arg name="algorithm" default="astar"/>
+  
+  <!-- Launch path planner node -->
   <node pkg="turtlebot_slam_navigation" type="path_planner_node" name="path_planner" output="screen">
+    <param name="algorithm" value="$(arg algorithm)"/>
     <param name="inflation_radius" value="0.3"/>
     <param name="obstacle_threshold" value="50"/>
   </node>
   
-  <!--path follower node -->
+  <!-- Launch path follower node -->
   <node pkg="turtlebot_slam_navigation" type="path_follower_node" name="path_follower" output="screen">
     <param name="look_ahead_distance" value="0.5"/>
     <param name="linear_velocity" value="0.2"/>

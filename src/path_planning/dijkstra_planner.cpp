@@ -8,31 +8,33 @@
 #include <cmath>
 #include <algorithm>
 
+
 #include "utils.hpp"
 
 namespace path_planning {
 
-class AStarPlanner {
+class DijkstraPlanner {
 public:
-    AStarPlanner(ros::NodeHandle& nh);
-    //main function to plan the path
+    DijkstraPlanner(ros::NodeHandle& nh);
     nav_msgs::Path planPath(const geometry_msgs::PoseStamped& start, 
                             const geometry_msgs::PoseStamped& goal,
                             const nav_msgs::OccupancyGrid& map);
 
 private:
     ros::NodeHandle nh_;
+    
+    // Parameters
     double inflation_radius_; 
     int obstacle_threshold_;  
 };
 
-AStarPlanner::AStarPlanner(ros::NodeHandle& nh) : nh_(nh) {
+DijkstraPlanner::DijkstraPlanner(ros::NodeHandle& nh) : nh_(nh) {
     // Load parameters
     nh_.param<double>("inflation_radius", inflation_radius_, 0.3);
     nh_.param<int>("obstacle_threshold", obstacle_threshold_, 50);
 }
 
-nav_msgs::Path AStarPlanner::planPath(
+nav_msgs::Path DijkstraPlanner::planPath(
     const geometry_msgs::PoseStamped& start_pose, 
     const geometry_msgs::PoseStamped& goal_pose,
     const nav_msgs::OccupancyGrid& map) {
@@ -42,19 +44,20 @@ nav_msgs::Path AStarPlanner::planPath(
     mapToGrid(map, start_pose, start_x, start_y);
     mapToGrid(map, goal_pose, goal_x, goal_y);
     
-    Node start(start_x, start_y, 0, heuristic(start_x, start_y, goal_x, goal_y));
+    
+    Node start(start_x, start_y, 0, 0); 
     Node goal(goal_x, goal_y);
     
     // Open set implemented as a priority queue
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_set;
     
-    // track of which nodes are in the open set
+    //track of which nodes are in the open set
     std::unordered_map<Node, bool, NodeHash> in_open_set;
     
-    // track of where each node came from (for path reconstruction)
+    //track of where each node came from (for path reconstruction)
     std::unordered_map<Node, Node, NodeHash> came_from;
     
-    // track of g scores (cost from start to node)
+    //track of g scores (cost from start to node)
     std::unordered_map<Node, double, NodeHash> g_score;
     
     // Initialize the open set with the start node
@@ -63,7 +66,7 @@ nav_msgs::Path AStarPlanner::planPath(
     g_score[start] = 0;
     
     while (!open_set.empty()) {
-        // Get the node with the lowest f_cost
+        // Get the node with the lowest g_cost 
         Node current = open_set.top();
         open_set.pop();
         in_open_set[current] = false;
@@ -85,8 +88,8 @@ nav_msgs::Path AStarPlanner::planPath(
                 came_from[neighbor] = current;
                 g_score[neighbor] = tentative_g_score;
                 neighbor.g_cost = tentative_g_score;
-                neighbor.h_cost = heuristic(neighbor.x, neighbor.y, goal.x, goal.y);
-                neighbor.f_cost = neighbor.g_cost + neighbor.h_cost;
+                neighbor.h_cost = 0; // No heuristic in Dijkstra
+                neighbor.f_cost = neighbor.g_cost; // f_cost = g_cost in Dijkstra
                 
                 // Add to the open set if not already there
                 if (!in_open_set[neighbor]) {
