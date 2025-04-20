@@ -1,0 +1,75 @@
+version: '3'
+services:
+  # Core ROS service
+  roscore:
+    image: yashphalle/mapngo:latest
+    network_mode: host
+    command: roscore
+    container_name: roscore
+    restart: always
+
+  # Simulation environment
+  simulation:
+    image: yashphalle/mapngo:latest
+    network_mode: host
+    depends_on:
+      - roscore
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - TURTLEBOT3_MODEL=waffle
+      - ROS_MASTER_URI=http://localhost:11311
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - .:/catkin_ws2/src/turtlebot_slam_navigation
+    command: bash -c "sleep 5 && roslaunch turtlebot_slam_navigation simulation.launch"
+
+  # SLAM 
+  slam:
+    image: yashphalle/mapngo:latest
+    network_mode: host
+    depends_on:
+      - roscore
+      - simulation
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - TURTLEBOT3_MODEL=waffle
+      - ROS_MASTER_URI=http://localhost:11311
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - .:/catkin_ws2/src/turtlebot_slam_navigation
+    command: bash -c "sleep 10 && roslaunch turtlebot_slam_navigation slam.launch"
+
+  # Path planning navigation
+  navigation:
+    image: yashphalle/mapngo:latest
+    network_mode: host
+    depends_on:
+      - roscore
+      - simulation
+      - slam
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - TURTLEBOT3_MODEL=waffle
+      - ROS_MASTER_URI=http://localhost:11311
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - .:/catkin_ws2/src/turtlebot_slam_navigation
+    command: bash -c "sleep 15 && roslaunch turtlebot_slam_navigation navigation.launch algorithm:=astar"
+
+  # Teleop keyboard control
+  teleop:
+    image: yashphalle/mapngo:latest
+    network_mode: host
+    depends_on:
+      - roscore
+      - simulation
+    stdin_open: true
+    tty: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - ROS_MASTER_URI=http://localhost:11311
+    command: bash -c "sleep 20 && rosrun teleop_twist_keyboard teleop_twist_keyboard.py"
