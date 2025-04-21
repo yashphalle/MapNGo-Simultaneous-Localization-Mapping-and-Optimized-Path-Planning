@@ -5,16 +5,18 @@
 #include <tf/transform_listener.h>
 
 
-#include "utils.h"
+#include "utils.hpp"
 
 namespace path_planning {
     class AStarPlanner;
     class DijkstraPlanner;
+    class RRTPlanner;
 }
 
 
 #include "dijkstra_planner.cpp"
 #include "a_star_planner.cpp"
+#include "rrt_planner.cpp"
 
 using namespace path_planning;
 
@@ -31,6 +33,7 @@ private:
     
     AStarPlanner* a_star_planner_;
     DijkstraPlanner* dijkstra_planner_;
+    RRTPlanner* rrt_planner_;
 
     std::string algorithm_;
 
@@ -39,6 +42,7 @@ public:
 
         a_star_planner_ = nullptr;
         dijkstra_planner_ = nullptr;
+        rrt_planner_ = nullptr;
 
         nh_.param<std::string>("algorithm", algorithm_, "astar");
         if (algorithm_ == "astar") {
@@ -47,8 +51,9 @@ public:
         } else if (algorithm_ == "dijkstra") {
             dijkstra_planner_ = new DijkstraPlanner(nh_);
             // planner_ = dijkstra_planner_;
+        }else if (algorithm_ == "rrt") { 
+            rrt_planner_ = new RRTPlanner(nh_);
         }
-
         // Subscribe to map updates
         map_sub_ = nh_.subscribe("/map", 1, &PathPlannerNode::mapCallback, this);
         
@@ -60,10 +65,14 @@ public:
         
         ROS_INFO("Path planner node initialized");
     }
-
+    // Destructor - Cleaning memory
+    //Evry time When we will start this node, we will create algo object and this wiill 
+    //take up space in memory . when we terminate the prgram then it will just delete the pointer to object 
+    // But the object will still be in memory. to free up this we need to do it explicitly
     ~PathPlannerNode() {
         if(a_star_planner_)delete a_star_planner_;
         if(dijkstra_planner_)delete dijkstra_planner_;
+        if(rrt_planner_)delete rrt_planner_;
     }
     
     void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& map) {
@@ -104,8 +113,12 @@ public:
         nav_msgs::Path path ;
         if (algorithm_ == "astar") {
             path = a_star_planner_->planPath(start, *goal, map_);
-        } else { 
+        } else if (algorithm_ == "dijkstra") { 
             path = dijkstra_planner_->planPath(start, *goal, map_);
+        }
+        else if(algorithm_ == "rrt") { 
+            path = rrt_planner_->planPath(start, *goal, map_);
+        
         }
 
         
@@ -113,7 +126,7 @@ public:
         // Publish the path
         if (!path.poses.empty()) {
             path_pub_.publish(path);
-            ROS_INFO("Path published with %zu points", path.poses.size());
+            ROS_INFO("Path published with %zu points, Usiung %s algorithm",path.poses.size(), algorithm_.c_str());
         } else {
             ROS_WARN("No path found");
         }
