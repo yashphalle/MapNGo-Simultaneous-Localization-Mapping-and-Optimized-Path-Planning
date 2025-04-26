@@ -9,6 +9,7 @@ MapNGo - ROS-based project on path planning for mobile robots. This project impl
 - **Docker Support**: Run the entire system in containers with no ROS installation required - No more "waiting for a lucky day" to get this project running!
 - **TurtleBot3 Support**: Currently configured and tested for the popular TurtleBot3 robot platform.🐢
 
+
 # 📂 Project Structure
 
 ## `src/path_planning/` - Path planning algorithms
@@ -31,7 +32,11 @@ MapNGo - ROS-based project on path planning for mobile robots. This project impl
 
 ---
 
+## MapNGo in Action!
 
+[![Demo](https://img.youtube.com/vi/G7LvvjSoTiQ/0.jpg)](https://www.youtube.com/watch?v=G7LvvjSoTiQ)
+
+---
 ## 🐳 Docker Installation - Run this project in a minute!
 
 The easiest way to use MapNGo is with Docker:
